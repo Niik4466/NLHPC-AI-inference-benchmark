@@ -1,0 +1,4 @@
+{
+    "models": ["model example 1", "model example 2"],
+    "prompts": ["promt example 1", "prompt example 2"]
+}
