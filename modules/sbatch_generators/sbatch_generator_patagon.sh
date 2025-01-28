@@ -74,7 +74,7 @@ export OLLAMA_SCHED_SPREAD=true
 
 # ---------------- Comandos --------------------
 
-cd ~/NLHPC_AI_Inference_benchmark
+cd ~/NLHPC_AI_inference_benchmark
 
 ollama serve &
 sleep 3
@@ -83,7 +83,7 @@ sleep 3
 source nlhpc_benchmark/bin/activate
 
 # Ejecutar la inferencia
-python inference.py -g ${gpus} -r ${repetitions} --test_app=${test_app} --gpu_backend=${gpu_backend}
+python3 inference.py -g ${gpus} -r ${repetitions} --test_app=${test_app} --gpu_backend=${gpu_backend}
 
 sleep 1
 

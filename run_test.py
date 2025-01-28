@@ -17,7 +17,7 @@ parser.add_argument(
     type=int,
     default=1,
     help="Number of test repetitions. Default = 1",
-    det="rep"
+    dest="rep"
 )
 
 parser.add_argument(
