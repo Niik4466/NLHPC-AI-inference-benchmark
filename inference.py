@@ -97,8 +97,6 @@ if (args.test_app == "ollama"):
     output_file = os.path.join(result_path, "ollama_benchmark_results.csv")
     file_exists = os.path.isfile(output_file)
 
-    gpu_monitor = GpuMonitor(0.1)
-
     with open(output_file, mode='a', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
         if not file_exists:
@@ -139,9 +137,10 @@ if (args.test_app == "ollama"):
 
         for r in range(args.rep):
             for model, model_data, weight in zip(models_name_list, model_parameters_and_quantization, models_weight):
-                if weight > max_vram:
+                if weight > max_vram*args.num_gpus:
                     continue
                 for prompt in prompts_list:
+                    gpu_monitor = GpuMonitor(0.1)
                     gpu_monitor.start()
                     prompt_eval_duration, prompt_eval_count, response = query_ollama(prompt.strip(), model.strip(), port=ollama_host)
                     gpu_monitor.stop()
@@ -161,7 +160,7 @@ if (args.test_app == "ollama"):
                                     prompt_eval_duration,
                                     prompt_eval_count,
                                     weight,
-                                    args.gpus,
+                                    args.num_gpus,
                                     prompt,
                                     response] 
                                     + list(sorted_gpu_stats.values()))

@@ -1,4 +1,4 @@
-import json, os, argparse, subprocess, sys
+import json, os, argparse, subprocess, sys, re
 
 # ------------ FLAGS SETTINGS -----------------
 
@@ -96,35 +96,54 @@ print("--------------------------------------")
 
 # -------------------- RUN THE TESTS --------------------
 
+# aux function to find the job_id in the launched job
+
+def get_job_id(result):
+    match = re.search(r"Submitted batch job (\d+)", result.stdout)
+    if match:
+        return match.group(1)
+    else:
+        print(result.stderr)
+        sys.exit()
+
 if (args.cluster == "NLHPC"):
     mem_usage_nlhpc = os.getenv('NLHPC_MEM_USAGE') or "250000"
+    job_id = -1
     for g in range(1,args.num_gpus+1):
         result = subprocess.run(
             [
                 "modules/sbatch_generators/sbatch_generator_nlhpc.sh",
-                "-p", args.partiton,
+                "-p", args.partition,
                 f"--gpus={g}",
-                f"--test_app={args.app_test}",
-                "-r", args.rep,
+                f"--test_app={args.test_app}",
+                "-r", str(args.rep),
                 f"--gpu_backend={args.gpu_backend}",
-                f"--mem={mem_usage_nlhpc}"
-            ]
+                f"--mem={mem_usage_nlhpc}",
+                f"--job_id={job_id}"
+            ],
+            capture_output=True,
+            text=True
         )
-    if result.returncode != 0:
-        print(f"Error: {result.stderr}")
-        sys.exit()
+        if result.returncode != 0:
+            print(f"Error: {result.stderr}")
+            sys.exit()
+        job_id = get_job_id(result=result)
+
 elif (args.cluster == "patagon"):
     for g in range(1,args.num_gpus+1):
         result = subprocess.run(
             [
                 "modules/sbatch_generators/sbatch_generator_patagon.sh",
-                "-p", args.partiton,
+                "-p", args.partition,
                 f"--gpus={args.num_gpus}",
-                f"--test_app={args.app_test}",
-                "-r", args.rep,
+                f"--test_app={args.test_app}",
+                "-r", str(args.rep),
                 f"--gpu_backend={args.gpu_backend}"
-            ]
+            ],
+            capture_output=True,
+            text=True
         )
-    if result.returncode != 0:
-        print(f"Error: {result.stderr}")
-        sys.exit()
+        if result.returncode != 0:
+            print(f"Error: {result.stderr}")
+            sys.exit()
+        job_id = get_job_id(result=result)

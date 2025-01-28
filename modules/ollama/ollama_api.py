@@ -37,7 +37,7 @@ def query_ollama(prompt, model="llama2", port="127.0.0.1:11434"):
         # Extraer la duración de la evaluación y la cantidad de evaluaciones
         prompt_eval_duration = data.get("eval_duration", 0)  # En Nanosegundos
         prompt_eval_count = data.get("eval_count", 0) 
-        response = data["message"]["content"]
+        response = data["response"]
         return prompt_eval_duration, prompt_eval_count, response
 
     except requests.exceptions.RequestException as e:

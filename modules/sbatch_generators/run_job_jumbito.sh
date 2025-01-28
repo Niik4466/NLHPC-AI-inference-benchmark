@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Función para mostrar el uso del script
 usage() {
     echo "Usage: $0 -p <partition> --gpus=<num_gpus> --test_app=<app> -r <num_reps> --gpu_backend=<cuda/rocm>"
@@ -50,55 +48,3 @@ if ! [[ "$gpus" =~ ^[0-9]+$ ]]; then
     exit 1
 fi
 
-# Crear un script temporal para SBATCH
-temp_script="sbatch_script_$$.job"
-cat <<EOF > "$temp_script"
-#!/bin/bash
-#SBATCH -J ollama_bench_${partition}
-#SBATCH -p ${partition}
-#SBATCH -n 1
-#SBATCH -c 1
-#SBATCH --mem=${mem}
-#SBATCH --gres=gpu:${gpus}
-#SBATCH -o logs/ollama_bench_%j.out.err
-#SBATCH -e logs/ollama_bench_%j.out.err
-export OLLAMA_KEEP_ALIVE=2m0s
-export OLLAMA_MAX_LOADED_MODELS=1
-export OLLAMA_SCHED_SPREAD=true
-
-# ----------------Modulos----------------------------
-
-ml ollama
-
-# ---------------- Variables de entorno ----------------------------
-
-export OLLAMA_HOST="$OLLAMA_HOST"
-export OLLAMA_MODELS="$OLLAMA_MODELS"
-export TEST_DATA="$TEST_DATA"
-export RESULT_PATH="$RESULT_PATH"
-export GPU_MIN_W_USAGE="$GPU_MIN_W_USAGE"
-export MAX_VRAM="$MAX_VRAM"
-
-# ---------------- Comandos --------------------
-ollama serve &
-sleep 3
-
-# Cargar ambiente venv
-source nlhpc_benchmark/bin/activate
-
-# Ejecutar la inferencia
-python inference.py -g ${gpus} -r ${repetitions} --test_app=${test_app} --gpu_backend=${gpu_backend}
-EOF
-
-# Enviar el script a la cola de trabajos
-chmod 755 "$temp_script"
-
-if [[ job_id == -1 ]]; then
-    sbatch "$temp_script"
-else
-    sbatch --dependency=afterany:"$job_id" "$temp_script"
-fi
-
-# Limpiar
-sleep 2
-rm -f "$temp_script"
