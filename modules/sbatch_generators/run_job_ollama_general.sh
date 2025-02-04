@@ -1,3 +1,4 @@
+#!/bin/bash
 # Función para mostrar el uso del script
 usage() {
     echo "Usage: $0 -p <partition> --gpus=<num_gpus> --test_app=<app> -r <num_reps> --gpu_backend=<cuda/rocm>"
@@ -79,7 +80,7 @@ for ((i=0; i < ${gpus}; i++)); do
     OLLAMA_PID=$!
 
     # Run the inference script
-    python inference.py -g $i -r ${repetitions} --test_app=${test_app} --gpu_backend=${gpu_backend}
+    python inference.py -g $((i + 1)) -r ${repetitions} --test_app=${test_app} --gpu_backend=${gpu_backend} &> "logs/nlhpc_bench_logs.out.err"
 
     # Wait for ollama serve to finish
     kill ${OLLAMA_PID}

@@ -1,0 +1,14 @@
+{
+    "meta-llama/Llama-3.1-70B-Instruct":
+    [
+        "--host", "0.0.0.0",
+        "--port", 8000, 
+        "-tp", "4",
+        "--max-num-seqs", 1024,
+        "--max-seq-len-to-capture", 16384,
+        "--served-model-name", "meta-llama/Meta-Llama-3.1-70B-Instruct",
+        "--enable-chunked-prefill", false,
+        "--num-scheduler-step", 15,
+        "--max-num-seqs", 512
+    ]
+}

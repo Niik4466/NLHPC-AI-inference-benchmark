@@ -89,8 +89,13 @@ if args.test_app == "ollama":
     print("------------ OLLAMA CONFIG ----------------")
     print("Ollama host:\t", ollama_host)
     print("Ollama models:\t", ollama_models)
-if args.test_app == "vLLM":
-    print("------------ VLLM CONFIG ----------------")
+
+if args.test_app == "vLLM-bench":
+    print("------------ VLLM-BENCH CONFIG ----------------")
+    vllm_bench_config = os.getenv('VLLM_BENCH_CONFIG') or "vllm_config.json"
+    print("vLLM-bench config:\t", vllm_bench_config)
+if args.test_app == "vLLM-inference":
+    print("------------ VLLM-INFERENCE CONFIG ----------------")
 
 print("--------------------------------------")
 
@@ -112,7 +117,7 @@ if (args.cluster == "NLHPC"):
     for g in range(1,args.num_gpus+1):
         result = subprocess.run(
             [
-                "modules/sbatch_generators/sbatch_generator_nlhpc.sh",
+                f"modules/sbatch_generators/run_job_{args.test_app}_NLHPC.sh",
                 "-p", args.partition,
                 f"--gpus={g}",
                 f"--test_app={args.test_app}",
@@ -128,6 +133,7 @@ if (args.cluster == "NLHPC"):
             print(f"Error: {result.stderr}")
             sys.exit()
         job_id = get_job_id(result=result)
+        print(f"job {job_id} launched")
 
 elif (args.cluster == "patagon"):
     for g in range(1,args.num_gpus+1):
@@ -138,7 +144,8 @@ elif (args.cluster == "patagon"):
                 f"--gpus={args.num_gpus}",
                 f"--test_app={args.test_app}",
                 "-r", str(args.rep),
-                f"--gpu_backend={args.gpu_backend}"
+                f"--gpu_backend={args.gpu_backend}",
+                f"--job_id={job_id}"
             ],
             capture_output=True,
             text=True
@@ -147,3 +154,41 @@ elif (args.cluster == "patagon"):
             print(f"Error: {result.stderr}")
             sys.exit()
         job_id = get_job_id(result=result)
+        print(f"job {job_id} launched")
+
+elif (args.cluster == "jumbito"):
+    result = subprocess.run(
+        [
+            f"modules/sbatch_generators/run_job_jumbito.sh",
+            "-p", args.partition,
+            f"--gpus={args.num_gpus}",
+            f"--test_app={args.test_app}",
+            "-r", str(args.rep),
+            f"--gpu_backend={args.gpu_backend}"
+        ],
+        capture_output=True,
+        text=True,
+        check=True
+    )
+    if (result.returncode != 0):
+        print(f"Error: {result.stderr}")
+        print(f"Stdout: {result.stdout}")
+    else:
+        print(f"Success!")
+
+else:
+    result = subprocess.run(
+        [
+            f"modules/sbatch_generators/run_job_{args.test_app}_{args.cluster}.sh",
+            "-p", args.partition,
+            f"--gpus={args.num_gpus}",
+            f"--test_app={args.test_app}",
+            "-r", str(args.rep),
+            f"--gpu_backend={args.gpu_backend}"
+        ]
+    )
+    if result.returncode != 0:
+        print(f"Error: {result.stderr}")
+        print(f"Stdout: {result.stdout}")
+    else:
+        print(f"Success!")
