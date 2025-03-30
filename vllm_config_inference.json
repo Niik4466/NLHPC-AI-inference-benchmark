@@ -1,0 +1,73 @@
+{
+    "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B": {
+        "model": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+        "max-num-seqs": 512,
+        "max-seq-len-to-capture": 16384,
+        "served-model-name": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+        "enable-chunked-prefill": false,
+        "num-scheduler-step": 15,
+        "gpu-memory-utilization": 0.9,
+        "enforce-eager": true,
+        "dtype": "float16",
+        "num-scheduler-steps": 15
+    },
+    "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B": {
+        "model": "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+        "max-num-seqs": 512,
+        "max-seq-len-to-capture": 16384,
+        "served-model-name": "DeepSeek-R1-Distill-Qwen-7B",
+        "enable-chunked-prefill": false,
+        "num-scheduler-step": 15,
+        "gpu-memory-utilization": 0.9,
+        "enforce-eager": true,
+        "dtype": "float16",
+        "num-scheduler-steps": 15
+    },
+    "deepseek-ai/DeepSeek-R1-Distill-Llama-8B": {
+        "model": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+        "max-num-seqs": 512,
+        "served-model-name": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+        "enable-chunked-prefill": false,
+        "num-scheduler-step": 15,
+        "gpu-memory-utilization": 0.9,
+        "enforce-eager": true,
+        "dtype": "float16",
+        "num-scheduler-steps": 15
+    },
+    "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B": {
+        "model": "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B",
+        "max-num-seqs": 512,
+        "max-seq-len-to-capture": 16384,
+        "served-model-name": "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B",
+        "enable-chunked-prefill": false,
+        "num-scheduler-step": 15,
+        "gpu-memory-utilization": 0.9,
+        "enforce-eager": true,
+        "dtype": "float16",
+        "num-scheduler-steps": 15
+    },
+    "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B": {
+        "model": "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
+        "max-num-seqs": 512,
+        "max-seq-len-to-capture": 16384,
+        "served-model-name": "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
+        "enable-chunked-prefill": false,
+        "num-scheduler-step": 15,
+        "gpu-memory-utilization": 0.9,
+        "enforce-eager": true,
+        "dtype": "float16",
+        "num-scheduler-steps": 15
+    },
+    "deepseek-ai/DeepSeek-R1-Distill-Llama-70B": {
+        "model": "deepseek-ai/DeepSeek-R1-Distill-Llama-70B",
+        "max-num-seqs": 512,
+        "max-seq-len-to-capture": 16384,
+        "served-model-name": "deepseek-ai/DeepSeek-R1-Distill-Llama-70B",
+        "enable-chunked-prefill": false,
+        "num-scheduler-step": 15,
+        "gpu-memory-utilization": 0.9,
+        "enforce-eager": true,
+        "dtype": "float16",
+        "num-scheduler-steps": 15
+    }
+}

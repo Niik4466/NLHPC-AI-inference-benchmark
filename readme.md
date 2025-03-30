@@ -151,3 +151,13 @@ Tells the ollama service from which directory to fetch and download the models t
 Tells the ollama service wich ip and port adress use for recieve the queries.
     **Default**: `127.0.0.1:11434`
     **Example**: `0.0.0.0:4466`
+
+- **`VLLM_BENCH_ARGS`**:
+Path to the model configuration to launch the vLLM benchmark.
+    **Default**: `vllm_config.json`
+    **Example**: `/path/to/config.json`
+
+- **`VLLM_INFERENCE_ARGS`**:
+Path to the model configuration to launch de vLLM service.
+    **Default**: `vllm_config.json`
+    **Example**: `/path/to/config.json`

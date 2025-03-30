@@ -96,6 +96,8 @@ if args.test_app == "vLLM-bench":
     print("vLLM-bench config:\t", vllm_bench_config)
 if args.test_app == "vLLM-inference":
     print("------------ VLLM-INFERENCE CONFIG ----------------")
+    vllm_inference_config = os.getenv('VLLM_INFERENCE_CONFIG') or "vllm_config.json"
+    print("vLLM-bench config:\t", vllm_inference_config)
 
 print("--------------------------------------")
 
@@ -114,6 +116,7 @@ def get_job_id(result):
 if (args.cluster == "NLHPC"):
     mem_usage_nlhpc = os.getenv('NLHPC_MEM_USAGE') or "250000"
     job_id = -1
+    g = 1
     for g in range(1,args.num_gpus+1):
         result = subprocess.run(
             [

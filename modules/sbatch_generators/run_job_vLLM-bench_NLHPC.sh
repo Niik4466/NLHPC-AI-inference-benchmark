@@ -68,8 +68,6 @@ export OLLAMA_SCHED_SPREAD=true
 
 # ----------------Modulos----------------------------
 
-ml ai-inference
-
 # ---------------- Variables de entorno ----------------------------
 
 export TEST_DATA="$TEST_DATA"
@@ -79,11 +77,40 @@ export MAX_VRAM="$MAX_VRAM"
 
 # ---------------- Comandos --------------------
 
+docker run -v /home/ai_inference_db:/home/ai_inference_db -v /home/intern02:/home/intern02 -it --rm --device=/dev/kfd --device=/dev/dri --ipc=host --network=host --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --device=/dev/infiniband --ulimit memlock=-1:-1 --shm-size 256g --cap-add=IPC_LOCK rocm/vllm:rocm6.3.2_mi210_ubuntu22.04_py3.12_vllm_0.7.1.dev103_ib /bin/bash -c "
+
+export HF_HOME=/home/ai_inference_db/models/
+export HF_DATASETS_CACHE=/home/ai_inference_db/data/
+
+export VLLM_USE_TRITON_FLASH_ATTN=0
+export VLLM_ATTENTION_BACKEND=FLASH_ATTN
+export RAY_EXPERIMENTAL_NOSET_ROCR_VISIBLE_DEVICES=1
+export HIP_FORCE_DEV_KERNARG=1
+export NCCL_MIN_NCHANNELS=112
+export TORCH_BLAS_PREFER_HIPBLASLT=1
+export TORCHINDUCTOR_MAX_AUTOTUNE=1
+export TORCHINDUCTOR_MAX_AUTOTUNE_GEMM_BACKENDS=TRITON
+export TORCHINDUCTOR_FREEZING=1
+export TORCHINDUCTOR_CPP_WRAPPER=1
+export TORCHINDUCTOR_LAYOUT_OPTIMIZATION=1
+export PYTORCH_MIOPEN_SUGGEST_NHWC=1
+export VLLM_WORKER_MULTIPROC_METHOD=spawn
+export HSA_OVERRIDE_CPU_AFFINITY_DEBUG=0
+export TORCH_NCCL_HIGH_PRIORITY=1
+export GPU_MAX_HW_QUEUES=2
+export PYTORCH_MIOPEN_FORCE_NO_CACHE=0
+export TORCH_BLADE_ROCM=1
+export TORCH_HIP_FORCE_PERSISTENT_CACHE=1
+export TORCH_USE_CUDA_DSA=1
+export PYTORCH_JIT_LOG_LEVEL=0
+export TORCH_COMPILE_MAX_AUTOTUNE=1
+
 # Cargar ambiente venv
 source nlhpc_benchmark/bin/activate
 
 # Ejecutar la inferencia
 python inference.py -g ${gpus} -r ${repetitions} --test_app=${test_app} --gpu_backend=${gpu_backend}
+"
 EOF
 
 # Enviar el script a la cola de trabajos

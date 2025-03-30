@@ -1,6 +1,4 @@
-import json, argparse, csv, os, sys, io, pytorch
-from vllm.entrypoints.api_server import main as vllm_bench
-from transformers import AutomodelForCausaLLM
+import json, argparse, csv, os, sys, io
 from functools import partial
 
 # --------------- PARSER CONFIG --------------
@@ -51,7 +49,7 @@ if (args.gpu_backend == "rocm"):
 else:
     from modules.gpu_monitor.gpu_monitor_cuda import GpuMonitor
 
-if (args.test_app == "vLLM"):
+if (args.test_app == "vLLM-bench" or args.test_app == "vLLM-inference"):
     from modules.vLLM.models_data_utils import *
     from modules.vLLM.vLLM_bench_utils import *
 else:
@@ -90,17 +88,28 @@ if (args.test_app == "vLLM-bench"):
     # Read the json file
     vllm_bench_args_path = os.getenv('VLLM_BENCH_ARGS') or 'vllm_config.json'
     with open(vllm_bench_args_path, 'r') as vllm_bench_args_file:
-        vllm_bench_args = json.load(test_data_json_file)
+        vllm_bench_args = json.load(vllm_bench_args_file)
+
+if (args.test_app == "vLLM-inference"):
+    vllm_bench_args_path = os.getenv('VLLM_BENCH_ARGS') or 'vllm_config.json'
+    with open(vllm_bench_args_path, 'r') as vllm_bench_args_file:
+        vllm_bench_args = json.load(vllm_bench_args_file)
+
 
 # ------------ GET MODELS INFORMATION -----------
 
 if args.test_app == "ollama":
     model_parameters_and_quantization = list(map(partial(obtain_model_data_ollama, port=ollama_host), models_name_list))
-elif args.test_app == "vLLM-bench" or args.test_app == "vLLM-inference":
-    model_parameters_and_quantization = list(map(get_params_quantization, models_name_list))
-models_weight = [calculate_theorical_weight(parameters, quantization) for parameters, quantization in model_parameters_and_quantization]
+    models_weight = [calculate_theorical_weight(parameters, quantization) for parameters, quantization in model_parameters_and_quantization]
+
+
+# elif args.test_app == "vLLM-bench" or args.test_app == "vLLM-inference":
+#     models_info = []
+#     for model in models_name_list:
+#         models_info = list(map(get_model_info, models_name_list))
 
 # ------------ OPEN THE CSV FILE AND START THE INFERENCE ----------
+
 
 if (args.test_app == "ollama"):
 
@@ -175,6 +184,7 @@ if (args.test_app == "ollama"):
                                     response] 
                                     + list(sorted_gpu_stats.values()))
 
+
 elif args.test_app == "vLLM-bench":
     output_file = os.path.join(result_path, "vllm_benchmark_results.csv")
     file_exists = os.path.isfile(output_file)
@@ -186,7 +196,8 @@ elif args.test_app == "vLLM-bench":
                             , "Params"
                             , "Quantization"
                             , "Tokens/s"
-                            , "Theorical_size"
+                            , "Requests/s"
+                            , "Theorical Weight"
                             , "Num_Gpus"
                             , "GPU_0_Power_avg"
                             , "GPU_0_Power_max"
@@ -214,19 +225,34 @@ elif args.test_app == "vLLM-bench":
                             , "GPU_5_VRAM_usage_max"])
 
         for r in range(args.rep):
-            for model, model_data, weight in zip(models_name_list, model_parameters_and_quantization, models_weight):
-                for g in args.num_gpus:
-                    sys.stdout = io.StringIO()
-                    # Get bench config
-                    try:
-                        vllm_bench_args_model = vllm_bench_args[model]
-                    except:
-                        print(f"la configuracion del modelo no se ha encontrado {model}")
-                    ## Programar logica para que se salga del programa si no encuentra el modelo
+            for model in models_name_list:
+                g = 1
+                # Get bench config
+                try:
+                    vllm_bench_args_model = vllm_bench_args[model]
+                except:
+                    raise RuntimeError(f"{model} configuration not found")
+                
+                try:
+                    dtype_config = vllm_bench_args[model][vllm_bench_args_model.index("--dtype") + 1]
+                except ValueError:
+                    dtype_config = None
+                
+                print(f"Loading {model} config...")
+                model_data = get_model_info(model_name=model, dtype=dtype_config)
+                print("done!")
+
+                while g <= args.num_gpus:
+                    
+                    if model_data[2] > max_vram*g:
+                        print(f"The model {model} weight exceds avaible VRAM")
+                        print(f"model config\nParams: {model_data[0]}\tQuantization: {model_data[1]}\tWeight: {model_data[2]}GB")
+                        g = g << 1
+                        continue
                     gpu_monitor = GpuMonitor(0.1)
                     gpu_monitor.start()
                     # Run the bench
-                    tokens_per_second = run_vllm_bench(model, num_gpus=g, config=vllm_bench_args_model)
+                    tokens_per_second, requests_per_second = run_vllm_bench(model, num_gpus=g, config=vllm_bench_args_model)
                     gpu_monitor.stop()
                     # Get the gpu metrics
                     gpu_stats = gpu_monitor.get_stats()
@@ -236,80 +262,35 @@ elif args.test_app == "vLLM-bench":
                     writer.writerow([model, 
                                     model_data[0], #Params
                                     model_data[1], #Quantization
-                                    tokens_per_second, 
-                                    weight,
-                                    args.num_gpus,
+                                    tokens_per_second,
+                                    requests_per_second,
+                                    model_data[2], # Weight
+                                    g
                                     ] 
                                     + list(sorted_gpu_stats.values()))
+                    g = g << 1
+
 
 elif args.test_app == "vLLM-inference":
-    output_file = os.path.join(result_path, "vllm_inference_benchmark_results.csv")
-    file_exists = os.path.isfile(output_file)
+    for r in range(args.rep):
+        for model in models_name_list:
+            g = args.num_gpus
+            print("Running bench...")
+            sys.stdout.flush()
 
-    with open(output_file, mode='a', newline='', encoding='utf-8') as csvfile:
-        writer = csv.writer(csvfile)
-        if not file_exists:
-            writer.writerow(["Model"
-                            , "Params"
-                            , "Quantization"
-                            , "Tokens/s"
-                            , "Eval_duration"
-                            , "Eval_count"
-                            , "Theorical_size"
-                            , "Num_Gpus"
-                            , "Prompt"
-                            , "Response"
-                            , "GPU_0_Power_avg"
-                            , "GPU_0_Power_max"
-                            , "GPU_0_VRAM_usage_avg"
-                            , "GPU_0_VRAM_usage_max"
-                            , "GPU_1_Power_avg"
-                            , "GPU_1_Power_max"
-                            , "GPU_1_VRAM_usage_avg"
-                            , "GPU_1_VRAM_usage_max"
-                            , "GPU_2_Power_avg"
-                            , "GPU_2_Power_max"
-                            , "GPU_2_VRAM_usage_avg"
-                            , "GPU_2_VRAM_usage_max"
-                            , "GPU_3_Power_avg"
-                            , "GPU_3_Power_max"
-                            , "GPU_3_VRAM_usage_avg"
-                            , "GPU_3_VRAM_usage_max"
-                            , "GPU_4_Power_avg"
-                            , "GPU_4_Power_max"
-                            , "GPU_4_VRAM_usage_avg"
-                            , "GPU_4_VRAM_usage_max"
-                            , "GPU_5_Power_avg"
-                            , "GPU_5_Power_max"
-                            , "GPU_5_VRAM_usage_avg"
-                            , "GPU_5_VRAM_usage_max"])
+            result = subprocess.run(
+                ["python", 
+                "/home/intern02/NLHPC-AI-inference-benchmark/modules/vLLM/vllm_serve.py",
+                "--gpus", str(g),
+                "--model_name", model,
+                "--gpu_backend", args.gpu_backend
+                ]
+            )
 
-        for r in range(args.rep):
-            for g in args.num_gpus:
-                for model, model_data, weight in zip(models_name_list, model_parameters_and_quantization, models_weight):
-                    # Load the model
-                    llm = LLM(model, num_gpus=g)
+            time.sleep(30)
 
-                    # Run the test
-                    for prompt in prompts_list:
-                        gpu_monitor = GpuMonitor(0.1)
-                        gpu_monitor.start()
-                        # Start the test
-                        tokens_per_second, eval_count, eval_duration, output = run_inference_vllm(model, prompt)
-                        # Get gpu metrics
-                        gpu_monitor.stop()
-                        gpu_stats = gpu_monitor.get_stats()
-                        sorted_gpu_stats = {key: gpu_stats[key] for key in sorted(gpu_stats.keys())}
-
-                        # Save the data
-                        writer.writerow([model,
-                                        model_data[0],
-                                        model_data[1],
-                                        tokens_per_second,
-                                        eval_duration,
-                                        eval_count,
-                                        weight,
-                                        args.num_gpus,
-                                        prompt,
-                                        output]
-                                        + list(sorted_gpu_stats.values()))
+            if result.returncode != 0:
+                print("vLLM execution failed\n\n", f"Test failed for {model} with {g} gpus")
+            else:
+                print("Done!")
+            
